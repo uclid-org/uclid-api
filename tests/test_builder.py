@@ -1,4 +1,4 @@
-from uclid.ast import Uadd
+from uclid.builder import Uadd
 
 __author__ = "Federico Mora"
 __copyright__ = "Federico Mora"
