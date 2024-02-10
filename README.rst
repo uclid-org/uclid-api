@@ -2,18 +2,15 @@
 UCLID5 Python API
 =====
 
-
-    UCLID5 Python API
-
-
 The official repository for the UCLID5 Python API.
-
 
 
 Making Changes & Contributing
 =============================
 
-This project uses `pre-commit`_, please make sure to install it before making any
+See `CONTRIBUTING.rst` for more information on how to contribute to this project.
+
+Note that this project uses `pre-commit`, please make sure to install it before making any
 changes::
 
     pip install pre-commit
