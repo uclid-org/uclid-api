@@ -71,7 +71,9 @@ class UclidDecl(UclidElement):
         self.decltype = decltype
     def __inject__(self) -> str:
         if self.decltype == DeclTypes.VAR:
-            return "{} {} : {};".format(self.porttype.name, self.name, self.__declstring__)
+            return "{} {} : {};".format(
+                self.porttype.name, self.name, self.__declstring__
+            )
         elif self.decltype == DeclTypes.TYPE:
             if self.__declstring__ == "":
                 return "type {};".format(self.name)
@@ -135,7 +137,8 @@ class UclidDefineDecl(UclidDecl):
     @property
     def __declstring__(self) -> str:
         return "\tdefine {}{} = {};".format(
-            self.name, self.functionsig.__inject__(), self.body.__inject__())
+            self.name, self.functionsig.__inject__(), self.body.__inject__()
+        )
 class UclidFunctionDecl(UclidDecl):
     def __init__(self, name: str, functionsig) -> None:
         super().__init__(DeclTypes.FUNCTION)
@@ -143,7 +146,9 @@ class UclidFunctionDecl(UclidDecl):
         self.functionsig = functionsig
     @property
     def __declstring__(self) -> str:
-        return "\tfunction {}{};".format(self.name, self.functionsig.__inject__())
+        return "\tfunction {}{};".format(
+            self.name, self.functionsig.__inject__()
+        )
 
 class UclidProcedureDecl(UclidDecl):
     def __init__(self, name: str, proceduresig, body):
@@ -158,7 +163,11 @@ class UclidProcedureDecl(UclidDecl):
 {{
 {} 
 }}
-    """.format(self.name, self.proceduresig.__inject__(), textwrap.indent(self.body.__inject__(), '\t'))
+    """.format(
+            self.name, 
+            self.proceduresig.__inject__(), 
+            textwrap.indent(self.body.__inject__(), '\t')
+        )
 
 
 class UclidInstanceDecl(UclidDecl):
@@ -173,8 +182,10 @@ class UclidInstanceDecl(UclidDecl):
             _logger.error("Module {} not found in UclidContext.modules".format(self.modulename))
             _logger.debug("Available modules: {}".format(UclidContext.modules.keys()))
             exit(1)
-        argmapstr = ", ".join(["{} : ({})".format(port.name, self.argmap[port.name].__inject__()) 
-            for port in self.module.ip_var_decls + self.module.op_var_decls])
+        argmapstr = ', '.join([
+            "{} : ({})".format(port.name, self.argmap[port.name].__inject__())
+            for port in self.module.ip_var_decls + self.module.op_var_decls
+        ])
         return "{}({})".format(self.module.name, argmapstr)
 
 class UclidRawInstanceDecl(UclidDecl):
@@ -186,7 +197,10 @@ class UclidRawInstanceDecl(UclidDecl):
         self.argmap = argmap
     @property
     def __declstring__(self):
-        argmapstr = ", ".join(["{} : ({})".format(portname, self.argmap[portname].__inject__()) for portname in self.argmap])
+        argmapstr = ', '.join([
+            "{} : ({})".format(portname, self.argmap[portname].__inject__()) 
+            for portname in self.argmap
+        ])
         return "{}({})".format(self.modname, argmapstr)
 
 class UclidImportDecl(UclidDecl):
@@ -224,8 +238,12 @@ class UclidSpecDecl(UclidDecl):
     def __declstring__(self) -> str:
         if self.name != "":
             if not self.is_ltl:
-                return "property {} : {};\n".format(self.name, self.body.__inject__())
-            return "property[LTL] {} : {};\n".format(self.name, self.body.__inject__())
+                return "property {} : {};\n".format(
+                    self.name, self.body.__inject__()
+                )
+            return "property[LTL] {} : {};\n".format(
+                    self.name, self.body.__inject__()
+                )
         else:
             if not self.is_ltl:
                 return "property {};\n".format(self.body.__inject__())
@@ -496,13 +514,16 @@ class UclidExpr(UclidElement):
 
 
 class UclidOpExpr(UclidExpr):
-    '''
+    """
         Generic Uclid operator expression
-    '''
+    """
     def __init__(self, op, children) -> None:
         super().__init__()
         self.op = op
-        self.children = [UclidLiteral(str(child)) if isinstance(child, int) else child for child in children]
+        self.children = [
+            UclidLiteral(str(child)) if isinstance(child, int) else child  
+            for child in children
+        ]
     def __inject__(self) -> str:
         c_code = ["({})".format(child.__inject__()) for child in self.children]
         oprep = Operators.OpMapping[self.op]
@@ -549,7 +570,10 @@ class UclidFunctionApplication(UclidExpr):
         self.function = function if isinstance(function, str) else function.name
         self.arglist = arglist
     def __inject__(self) -> str:
-        return "{}({})".format(self.function, ', '.join([arg.__inject__() for arg in self.arglist]))
+        return "{}({})".format(
+            self.function, 
+            ', '.join([arg.__inject__() for arg in self.arglist])
+        )
 
 class UclidArraySelect(UclidExpr):
     def __init__(self, arrayexpr: UclidExpr, indexseq: List[UclidExpr]):
@@ -561,9 +585,14 @@ class UclidArraySelect(UclidExpr):
         """
         super().__init__()
         self.arrayexpr = arrayexpr if isinstance(arrayexpr, str) else arrayexpr.__inject__()
-        self.indexseq = [ind if isinstance(ind, UclidExpr) else UclidLiteral(str(ind)) for ind in indexseq]
+        self.indexseq = [
+            ind if isinstance(ind, UclidExpr) else UclidLiteral(str(ind)) 
+            for ind in indexseq
+        ]
     def __inject__(self) -> str:
-        return "{}[{}]".format(self.arrayexpr, "][".join([ind.__inject__() for ind in self.indexseq]))
+        return "{}[{}]".format(self.arrayexpr, 
+            "][".join([ind.__inject__() for ind in self.indexseq])
+        )
 
 class UclidArrayUpdate(UclidExpr):
     def __init__(self, arrayexpr: UclidExpr, index: UclidExpr, value: UclidExpr):
@@ -617,7 +646,11 @@ class UclidForallExpr(UclidExpr):
         self.typ = typ
         self.bodyexpr = bodyexpr
     def __inject__(self) -> str:
-        return "forall ({} : {}) :: ({})".format(self.iterator, self.typ.__inject__(), self.bodyexpr.__inject__())
+        return "forall ({} : {}) :: ({})".format(
+            self.iterator, 
+            self.typ.__inject__(), 
+            self.bodyexpr.__inject__()
+        )
 
 # ==============================================================================
 # Uclid Literals
@@ -800,15 +833,19 @@ class UclidCaseStmt(UclidStmt):
         self.conditionlist = conditionlist
         self.stmtlist = stmtlist
     def __inject__(self) -> str:
-        cases = ['({})\t: {{ \n{} \n}}'.format(item[0].__inject__(), textwrap.indent(item[1].__inject__(), '\t'))
-            for item in zip(self.conditionlist, self.stmtlist)]
+        cases = [
+            "({})\t: {{ \n{} \n}}".format(
+                item[0].__inject__(), textwrap.indent(item[1].__inject__(), '\t')
+            )
+            for item in zip(self.conditionlist, self.stmtlist)
+        ]
         return textwrap.dedent(
-                """
+            """
                 case
                 {}
                 esac
                 """
-            ).format("\n".join(cases))
+        ).format("\n".join(cases))
 
 class UclidITEStmt(UclidStmt):
     def __init__(self, condition: UclidExpr, tstmt: UclidStmt, estmt: UclidStmt=None):
@@ -824,13 +861,19 @@ class UclidITEStmt(UclidStmt):
         self.estmt = estmt
     def __inject__(self) -> str:
         if self.estmt == None:
-            return '''
+            return """
     if ({}) {{ {} }}
-        '''.format(self.condition.__inject__(), self.tstmt.__inject__())
+        """.format(
+                self.condition.__inject__(), self.tstmt.__inject__()
+            )
         else:
-            return '''
+            return """
     if ({}) {{ {} }} else {{ {} }}
-        '''.format(self.condition.__inject__(), self.tstmt.__inject__(), self.estmt.__inject__())
+        """.format(
+                self.condition.__inject__(), 
+                self.tstmt.__inject__(), 
+                self.estmt.__inject__()
+            )
 
 class UclidITENestedStmt(UclidStmt):
     def __init__(self, conditionlist: List[UclidExpr], stmtlist: List[UclidStmt]):
@@ -845,16 +888,21 @@ class UclidITENestedStmt(UclidStmt):
         elif len(conditionlist) == len(stmtlist) - 1:
             self.format = "ITE"
         else:
-            _logger.error("Illegal lengths of conditionlist and stmt blocks in ITE operator")
+            _logger.error(
+                "Illegal lengths of conditionlist and stmt blocks in ITE operator"
+            )
         self.conditionlist = conditionlist
         self.stmtlist = stmtlist
+    
     def __inject__(self) -> str:
         def ite_rec(clist, slist):
             if len(clist) > 0 and len(slist) > 0:
                 nesting = ite_rec(clist[1:], slist[1:])
-                return '''
+                return """
     if ({}) {{ {} }} 
-    else {{ {} }}'''.format(clist[0].__inject__(), slist[0].__inject__(), nesting)
+    else {{ {} }}""".format(
+                    clist[0].__inject__(), slist[0].__inject__(), nesting
+                )
             elif len(slist) > 0:
                 return "{}".format(slist[0].__inject__())
             elif len(clist) == 0:
@@ -879,7 +927,9 @@ class UclidProcedureCallStmt(UclidStmt):
     def __inject__(self) -> str:
         return "call ({}) = {}({});".format(
             ', '.join([ret.__inject__() for ret in self.returns]),
-            self.iname, ', '.join([arg.__inject__() for arg in self.inputs]))
+            self.iname, 
+            ', '.join([arg.__inject__() for arg in self.inputs])
+        )
 class UclidInstanceProcedureCallStmt(UclidStmt):
     def __init__(self, instance: UclidInstance, proc, inputs: List[UclidExpr], returns: List[UclidExpr]):
         """Call procedure from a (sub-)module instance
@@ -892,13 +942,19 @@ class UclidInstanceProcedureCallStmt(UclidStmt):
         """
         super().__init__()
         self.instance = instance if isinstance(instance, str) else instance.name
-        self.iname = '{}.{}'.format(self.instance, proc if isinstance(proc, str) else proc.name)
+        self.iname = "{}.{}".format(
+            self.instance, 
+            proc if isinstance(proc, str) else proc.name
+        )
         self.inputs = inputs
         self.returns = returns
     def __inject__(self) -> str:
         return "call ({}) = {}({});".format(
             ', '.join([ret.__inject__() for ret in self.returns]),
-            self.iname, ', '.join([arg.__inject__() for arg in self.inputs]))
+            self.iname, 
+            ', '.join([arg.__inject__() for arg in self.inputs])
+        )
+
 class UclidNextStmt(UclidStmt):
     def __init__(self, instance: UclidInstance):
         """Next statement: this advances the state of the module instance
@@ -965,11 +1021,17 @@ class UclidForStmt(UclidStmt):
         self.range_low  = range_low
         self.body = body
     def __inject__(self) -> str:
-        return '''
+        return """
 for ({} : {}) in range({}, {}) {{
     {}
 }}
-'''.format(self.iterator.__inject__(), self.iteratortyp.__inject__(), self.range_low.__inject__(), self.range_high.__inject__(), self.body.__inject__())
+""".format(
+            self.iterator.__inject__(), 
+            self.iteratortyp.__inject__(), 
+            self.range_low.__inject__(), 
+            self.range_high.__inject__(), 
+            self.body.__inject__()
+        )
 
 # ==============================================================================
 # Uclid Control Block
@@ -1026,9 +1088,13 @@ class UclidPrintCexCommand(UclidControlCommand):
         self.engine = engine
         self.trace_items = trace_items
     def __inject__(self) -> str:
-        return "{}.print_cex({});".format(self.engine.name,
-        ', '.join([item.__inject__() if isinstance(item, UclidExpr) else str(item)
-        for item in self.trace_items]))
+        return "{}.print_cex({});".format(
+            self.engine.name,
+            ', '.join([
+                item.__inject__() if isinstance(item, UclidExpr) else str(item)
+                for item in self.trace_items
+            ])
+        )
 
 class UclidPrintCexJSONCommand(UclidControlCommand):
     def __init__(self, enginename: str, trace_items : List[UclidExpr] = []):
@@ -1042,9 +1108,13 @@ class UclidPrintCexJSONCommand(UclidControlCommand):
         self.enginename = enginename
         self.trace_items = trace_items
     def __inject__(self) -> str:
-        return "{}.print_cex_json({});".format(self.enginename,
-        ', '.join([item.__inject__() if isinstance(item, UclidExpr) else str(item)
-        for item in self.trace_items]))
+        return "{}.print_cex_json({});".format(
+            self.enginename,
+            ', '.join([
+                item.__inject__() if isinstance(item, UclidExpr) else str(item)
+                for item in self.trace_items
+            ])
+        )
 class UclidPrintResultsCommand(UclidControlCommand):
     def __init__(self):
         """Print results command"""
@@ -1063,10 +1133,14 @@ class UclidControlBlock(UclidElement):
     def add(self, stmt):
         self.stmts.append(stmt)
     def __inject__(self) -> str:
-        return '''
+        return """
 control {{
 {}
-}}'''.format(textwrap.indent("\n".join([stmt.__inject__() for stmt in self.stmts]), '\t'))
+}}""".format(
+            textwrap.indent("\n".join([
+                stmt.__inject__() for stmt in self.stmts
+            ]), '\t')
+        )
 
 
 # ==============================================================================
