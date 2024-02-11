@@ -35,6 +35,10 @@ def download_uclid():
     # Get the other directories we'll use
     build = os.path.join(base, "build")
     uclid = os.path.join(build, "uclid-0.9.5", "bin", "uclid")
+    # if on windows, add .bat to uclid
+    if os.name == "nt":
+        uclid += ".bat"
+    _logger.info(f"Uclid executable: {uclid}")
 
     # if uclid exists, return it
     if os.path.exists(uclid):
@@ -61,12 +65,6 @@ def download_uclid():
     with zipfile.ZipFile(os.path.join(build, "uclid.zip"), "r") as zip_ref:
         zip_ref.extractall(build)
     _logger.info("Uclid unzipped")
-
-    # if on windows, add .bat to uclid
-    if os.name == "nt":
-        uclid += ".bat"
-
-    _logger.info(f"Uclid executable: {uclid}")
 
     # make uclid executable
     _logger.info("Making Uclid executable")
