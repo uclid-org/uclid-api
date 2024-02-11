@@ -22,6 +22,7 @@ def verify(query: str):
     with tempfile.NamedTemporaryFile() as tmp:
         tmp.write(query.encode())
         tmp.flush()
+        _logger.info(f"Running {uclid} on {tmp.name}")
         output = subprocess.run([uclid, tmp.name], capture_output=True)
         return output.stdout.decode("utf-8")
 
