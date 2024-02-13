@@ -1,6 +1,6 @@
 
 
-from builder import UclidContext, UclidBooleanType, UclidIntegerType, PortType, UclidOpExpr, UclidCheckCommand, UclidPrintResultsCommand
+from .builder import UclidContext, UclidBooleanType, UclidIntegerType, PortType, UclidOpExpr, UclidCheckCommand, UclidPrintResultsCommand
 
 # Variable creation sugaring
 def mkUclidVar(varname, typ, porttype):
