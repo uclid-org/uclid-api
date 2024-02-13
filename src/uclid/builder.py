@@ -157,7 +157,7 @@ class UclidProcedureDecl(UclidDecl):
         self.proceduresig = proceduresig
         self.body = body
     @property
-    def __declstrig__(self) -> str:
+    def __declstring__(self) -> str:
         return """procedure {} 
     {}
 {{
@@ -230,7 +230,7 @@ class UclidWildcardImportDecl(UclidImportDecl):
 class UclidSpecDecl(UclidDecl):
     def __init__(self, name: str, body, is_ltl=False) -> None:
         """Specification declaration"""
-        super().__init__()
+        super().__init__(DeclTypes.CONSTRAINTS)
         self.name = name
         self.body = body
         self.is_ltl = is_ltl
@@ -254,10 +254,10 @@ class UclidSpecDecl(UclidDecl):
 # ==============================================================================
 class UclidAxiomDecl(UclidDecl):
     def __init__(self, name: str, body) -> None:
-        super().__init__()
+        super().__init__(DeclTypes.CONSTRAINTS)
         self.name = name
         self.body = body
-    def __inject__(self) -> str:
+    def __declstring__(self) -> str:
         if self.name != "":
             return "axiom {} : ({});\n".format(self.name, self.body.__inject__())
         else:
@@ -369,8 +369,8 @@ class UclidFunctionSig(UclidElement):
         return "({}) : {}".format(input_sig, self.outtype.__inject__())
 class UclidDefine(UclidElement):
     def __init__(self, name) -> None:
-        self.name = name
         super().__init__()
+        self.name = name
     def __inject__(self) -> str:
         return self.name
 class UclidFunction(UclidElement):
@@ -391,11 +391,11 @@ class UclidProcedureSig(UclidElement):
         Args:
             inputs (List[(UclidLiteral|str, UclidType)]): List of (typed) input arguments
             modifies (List[UclidLiteral], optional): List of modified variables. Defaults to None.
-            returns (List[(UclidLiteral)], optional): List of returned variables. Defaults to None.
+            returns (List[(UclidLiteral|str, UclidType)], optional): List of returned variables. Defaults to None.
             requires (UclidExpr, optional): Input/initial assumptions in procedural verification. Defaults to None.
             ensures (UclidExpr, optional): Output/final guarantees in procedural verification. Defaults to None.
         """
-        super().__init__("")
+        super().__init__()
         self.inputs = inputs
         self.modifies = modifies
         self.returns = returns
@@ -406,21 +406,21 @@ class UclidProcedureSig(UclidElement):
             i[0] if isinstance(i[0], str) else i[0].lit, 
             i[1].__inject__()
         ) for i in self.inputs])
-        modify_str = "\n\tmodifies {};".format(
-            ', '.join([sig.__inject__() for sig in self.modifies])
-        ) if self.modifies is not None else ''
         return_str = "\n\treturns ({})".format(', '.join(["{} : {}".format(
             i[0] if isinstance(i[0], str) else i[0].lit, 
             i[1].__inject__()) for i in self.returns])
         ) if self.returns is not None else ''
-        ensures_str = "\nensures ({})".format(
-            self.ensures.__inject__()
-        ) if self.ensures is not None else ''
-        requires_str = "\nrequires ({})".format(
+        modify_str = "\n\tmodifies {};".format(
+            ', '.join([sig.__inject__() for sig in self.modifies])
+        ) if self.modifies is not None else ''
+        requires_str = "\nrequires ({});".format(
             self.requires.__inject__()
         ) if self.requires is not None else ''
-        return "({}){}{}{}{}".format(input_str, modify_str, requires_str, ensures_str, return_str)
-class UclidProcedure(UclidDecl):
+        ensures_str = "\nensures ({});".format(
+            self.ensures.__inject__()
+        ) if self.ensures is not None else ''
+        return "({}){}{}{}{}".format(input_str, modify_str, return_str, requires_str, ensures_str)
+class UclidProcedure(UclidElement):
     def __init__(self, name):
         super().__init__()
         self.name = name
