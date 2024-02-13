@@ -1077,19 +1077,19 @@ class UclidCheckCommand(UclidControlCommand):
         return "check;"
 
 class UclidPrintCexCommand(UclidControlCommand):
-    def __init__(self, engine: str, trace_items : List[UclidExpr] = []):
+    def __init__(self, enginename: str, trace_items : List[UclidExpr] = []):
         """Print counterexample command
 
         Args:
-            engine (str): Name of proof object
+            enginename (str): Name of proof object
             trace_items (List[UclidExpr], optional): Variables to print from the counterexample trace. Defaults to [] (in which case all module variables are printed).
         """
         super().__init__()
-        self.engine = engine
+        self.enginename = enginename
         self.trace_items = trace_items
     def __inject__(self) -> str:
         return "{}.print_cex({});".format(
-            self.engine.name,
+            self.enginename,
             ', '.join([
                 item.__inject__() if isinstance(item, UclidExpr) else str(item)
                 for item in self.trace_items
@@ -1101,7 +1101,7 @@ class UclidPrintCexJSONCommand(UclidControlCommand):
         """Print counterexample in JSON format
 
         Args:
-            engine (str): Name of proof object
+            enginename (str): Name of proof object
             trace_items (List[UclidExpr], optional): Variables to print from the counterexample trace. Defaults to [] (in which case all module variables are printed).
         """
         super().__init__()
