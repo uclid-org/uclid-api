@@ -28,6 +28,13 @@ def verify(query: str):
 
 
 def download_uclid():
+    # If uclid is already in the path, return it
+    _logger.info("Checking if Uclid is in the path")
+    uclid = shutil.which("uclid")
+    if uclid:
+        _logger.info("Uclid is in the path")
+        return uclid
+
     # Get the directory of this file
     base = pathlib.Path(__file__).parent.resolve()
     _logger.info(f"Base directory: {base}")
