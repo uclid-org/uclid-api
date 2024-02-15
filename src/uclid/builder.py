@@ -136,7 +136,7 @@ class UclidDefineDecl(UclidDecl):
         self.body = body
     @property
     def __declstring__(self) -> str:
-        return "\tdefine {}{} = {};".format(
+        return "define {}{} = {};".format(
             self.name, self.functionsig.__inject__(), self.body.__inject__()
         )
 class UclidFunctionDecl(UclidDecl):
@@ -146,7 +146,7 @@ class UclidFunctionDecl(UclidDecl):
         self.functionsig = functionsig
     @property
     def __declstring__(self) -> str:
-        return "\tfunction {}{};".format(
+        return "function {}{};".format(
             self.name, self.functionsig.__inject__()
         )
 
@@ -257,6 +257,7 @@ class UclidAxiomDecl(UclidDecl):
         super().__init__(DeclTypes.CONSTRAINTS)
         self.name = name
         self.body = body
+    @property
     def __declstring__(self) -> str:
         if self.name != "":
             return "axiom {} : ({});\n".format(self.name, self.body.__inject__())
@@ -860,7 +861,7 @@ class UclidITEStmt(UclidStmt):
         self.tstmt = tstmt
         self.estmt = estmt
     def __inject__(self) -> str:
-        if self.estmt == None:
+        if self.estmt is None:
             return """
     if ({}) {{ {} }}
         """.format(
@@ -1380,7 +1381,7 @@ class UclidModule(UclidElement):
         else:
             deffun = UclidDefine(name)
             defdec = UclidDefineDecl(name, functionsig, body)
-            self.define_decls.append[name] = defdec
+            self.define_decls[name] = defdec
             return deffun
     
     def mkUninterpretedFunction(self, name, functionsig) -> UclidFunction:
@@ -1434,6 +1435,21 @@ class UclidModule(UclidElement):
             self.module_assumes[name] = assm
             return assm
 
+    def setAssume(self, name: str, body: UclidExpr) -> UclidAxiomDecl:
+        """Set existing assumption in the module
+
+        Args:
+            name (str): Name of the assumption (axiom)
+            body (UclidExpr): Assumption body
+        """
+        if name in self.module_assumes:
+            _logger.warn("Assumption {} does not exist in module {}, creating one".format(name, self.name))
+            self.mkAssume(name, body)
+        else:
+            assm = UclidAxiomDecl(name, body)
+            self.module_assumes[name] = assm
+            return assm
+
     def mkProperty(self, name, body: UclidExpr, is_ltl=False) -> UclidSpecDecl:
         """Add a new property (assertion) to the module
         
@@ -1449,13 +1465,33 @@ class UclidModule(UclidElement):
             self.module_properties[name] = spec
             return spec
 
+    def setProperty(self, name: str, body: UclidExpr) -> UclidAxiomDecl:
+        """Set existing property in the module
+
+        Args:
+            name (str): Name of the assumption (axiom)
+            body (UclidExpr): Assumption body
+        """
+        if name in self.module_properties:
+            _logger.warn("Property {} does not exist in module {}, creating one".format(name, self.name))
+            self.mkProperty(name, body)
+        else:
+            spec = UclidSpecDecl(name, body)
+            self.module_properties[name] = spec
+            return spec
+
     def __type_decls__(self):
         return "\n".join([textwrap.indent(decl.__inject__(), '\t')
             for k, decl in self.type_decls.items()])
 
     def __var_decls__(self):
-        return "\n".join([textwrap.indent(decl.__inject__(), '\t')
+        vs = "\n".join([textwrap.indent(decl.__inject__(), '\t')
             for k, decl in self.var_decls.items()])
+        ips = "\n".join([textwrap.indent(decl.__inject__(), '\t')
+            for k, decl in self.ip_var_decls.items()])
+        ops = "\n".join([textwrap.indent(decl.__inject__(), '\t')
+            for k, decl in self.op_var_decls.items()])
+        return "\n".join([vs, ips, ops])
 
     def __const_decls__(self):
         return "\n".join([textwrap.indent(decl.__inject__(), '\t')
