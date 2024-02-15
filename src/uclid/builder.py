@@ -168,9 +168,8 @@ class UclidFunctionDecl(UclidDecl):
 
     @property
     def __declstring__(self) -> str:
-        return "function {}{};".format(
-            self.name, self.functionsig.__inject__()
-        )
+        return "function {}{};".format(self.name, self.functionsig.__inject__())
+
 
 class UclidProcedureDecl(UclidDecl):
     def __init__(self, name: str, proceduresig, body):
@@ -203,13 +202,20 @@ class UclidInstanceDecl(UclidDecl):
     @property
     def __declstring__(self):
         if self.module.name not in UclidContext.modules:
-            _logger.error("Module {} not found in UclidContext.modules".format(self.module.name))
+            _logger.error(
+                "Module {} not found in UclidContext.modules".format(self.module.name)
+            )
             _logger.debug("Available modules: {}".format(UclidContext.modules.keys()))
             exit(1)
-        argmapstr = ', '.join([
-            "{} : ({})".format(port.name, self.argmap[port.name].__inject__())
-            for k, port in {**self.module.ip_var_decls, **self.module.op_var_decls}.items()
-        ])
+        argmapstr = ", ".join(
+            [
+                "{} : ({})".format(port.name, self.argmap[port.name].__inject__())
+                for k, port in {
+                    **self.module.ip_var_decls,
+                    **self.module.op_var_decls,
+                }.items()
+            ]
+        )
         return "{}({})".format(self.module.name, argmapstr)
 
 
@@ -248,12 +254,15 @@ class UclidImportDecl(UclidDecl):
         self.modulename = modulename if isinstance(modulename, str) else modulename.name
         self.refname = refname
         self.decltype = decltype
+
     @property
     def __declstring__(self):
         if self.decltype == DeclTypes.FUNCTION:
             return f"function {self.name} = {self.modulename}.{self.refname};"
         else:
             return f"{self.modulename}.{self.refname}"
+
+
 class UclidWildcardImportDecl(UclidImportDecl):
     def __init__(self, decltype, modulename) -> None:
         super().__init__(decltype, "*", modulename, "*")
@@ -290,6 +299,7 @@ class UclidAxiomDecl(UclidDecl):
         super().__init__(DeclTypes.CONSTRAINTS)
         self.name = name
         self.body = body
+
     @property
     def __declstring__(self) -> str:
         if self.name != "":
@@ -359,6 +369,7 @@ class UclidType(UclidElement):
 
     def __inject__(self) -> str:
         return self.typestring
+
     def __eq__(self, other) -> bool:
         return self.typestring == other.typestring
 
@@ -954,7 +965,7 @@ class UclidComment(UclidStmt):
         self.text = text
 
     def __inject__(self) -> str:
-        return "\t//".join(("\n" + self.text.lstrip()).splitlines(True))
+        return "// ".join(("\n" + self.text.lstrip()).splitlines(True))
 
 
 class UclidRaw(UclidStmt):
@@ -1199,6 +1210,8 @@ class UclidNextStmt(UclidStmt):
 
     def __inject__(self) -> str:
         return "next ({});".format(self.instance.instancename)
+
+
 class UclidAssumeStmt(UclidStmt):
     def __init__(self, body: UclidExpr):
         """Assumption statement: this assumes that the body expression is true
@@ -1318,6 +1331,7 @@ class UclidBMCCommand(UclidControlCommand):
     def __inject__(self) -> str:
         return "{} = bmc({});".format(self.name, self.depth)
 
+
 class UclidInductionCommand(UclidControlCommand):
     def __init__(self, name: str):
         """Induction proof command
@@ -1326,8 +1340,10 @@ class UclidInductionCommand(UclidControlCommand):
             name (str): Name of proof object
         """
         self.name = name
+
     def __inject__(self) -> str:
         return "{} = induction;".format(self.name)
+
 
 class UclidCheckCommand(UclidControlCommand):
     def __init__(self):
@@ -1775,7 +1791,11 @@ class UclidModule(UclidElement):
             body (UclidExpr): Assumption body
         """
         if name in self.module_assumes:
-            _logger.warn("Assumption {} does not exist in module {}, creating one".format(name, self.name))
+            _logger.warn(
+                "Assumption {} does not exist in module {}, creating one".format(
+                    name, self.name
+                )
+            )
             self.mkAssume(name, body)
         else:
             assm = UclidAxiomDecl(name, body)
@@ -1807,7 +1827,11 @@ class UclidModule(UclidElement):
             body (UclidExpr): Assumption body
         """
         if name in self.module_properties:
-            _logger.warn("Property {} does not exist in module {}, creating one".format(name, self.name))
+            _logger.warn(
+                "Property {} does not exist in module {}, creating one".format(
+                    name, self.name
+                )
+            )
             self.mkProperty(name, body)
         else:
             spec = UclidSpecDecl(name, body)
@@ -1823,12 +1847,24 @@ class UclidModule(UclidElement):
         )
 
     def __var_decls__(self):
-        vs = "\n".join([textwrap.indent(decl.__inject__(), '\t')
-            for k, decl in self.var_decls.items()])
-        ips = "\n".join([textwrap.indent(decl.__inject__(), '\t')
-            for k, decl in self.ip_var_decls.items()])
-        ops = "\n".join([textwrap.indent(decl.__inject__(), '\t')
-            for k, decl in self.op_var_decls.items()])
+        vs = "\n".join(
+            [
+                textwrap.indent(decl.__inject__(), "\t")
+                for k, decl in self.var_decls.items()
+            ]
+        )
+        ips = "\n".join(
+            [
+                textwrap.indent(decl.__inject__(), "\t")
+                for k, decl in self.ip_var_decls.items()
+            ]
+        )
+        ops = "\n".join(
+            [
+                textwrap.indent(decl.__inject__(), "\t")
+                for k, decl in self.op_var_decls.items()
+            ]
+        )
         return "\n".join([vs, ips, ops])
 
     def __const_decls__(self):
@@ -1850,15 +1886,15 @@ class UclidModule(UclidElement):
     def __define_decls__(self):
         return "\n".join(
             [
-                textwrap.indent(decl.__inject__(), "\t") 
+                textwrap.indent(decl.__inject__(), "\t")
                 for k, decl in self.define_decls.items()
             ]
         )
-    
+
     def __function_decls__(self):
         return "\n".join(
             [
-                textwrap.indent(decl.__inject__(), "\t") 
+                textwrap.indent(decl.__inject__(), "\t")
                 for k, decl in self.function_decls.items()
             ]
         )
@@ -1929,10 +1965,10 @@ class UclidModule(UclidElement):
 
             \t// Defines
             {}
-            
+
             \t// Functions
             {}
-                                     
+
             \t// Procedures
             {}
 
@@ -1941,19 +1977,21 @@ class UclidModule(UclidElement):
 
             \t// Properties
             {}
-            """).format(
-                self.__import_decls__(),
-                self.__type_decls__(),
-                self.__var_decls__(),
-                self.__const_decls__(),
-                self.__instance_decls__(),
-                self.__define_decls__(),
-                self.__function_decls__(),
-                self.__procedure_defns__(),
-                self.__module_assumes__(),
-                self.__module_properties__()
-            )
-        acc += textwrap.dedent("""
+            """
+        ).format(
+            self.__import_decls__(),
+            self.__type_decls__(),
+            self.__var_decls__(),
+            self.__const_decls__(),
+            self.__instance_decls__(),
+            self.__define_decls__(),
+            self.__function_decls__(),
+            self.__procedure_defns__(),
+            self.__module_assumes__(),
+            self.__module_properties__(),
+        )
+        acc += textwrap.dedent(
+            """
             module {} {{
             {}
 
