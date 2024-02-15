@@ -764,7 +764,7 @@ class UclidComment(UclidStmt):
         super().__init__()
         self.text = text
     def __inject__(self) -> str:
-        return '\t//'.join(('\n' + self.text.lstrip()).splitlines(True))
+        return '// '.join(('\n' + self.text.lstrip()).splitlines(True))
 class UclidRaw(UclidStmt):
     def __init__(self, rawstring : str):
         """Raw Uclid statement
