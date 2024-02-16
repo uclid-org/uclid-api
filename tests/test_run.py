@@ -10,7 +10,7 @@ __license__ = "MIT"
 
 def test_download():
     uclid = download_uclid()
-    output = subprocess.run([uclid, "--help"], capture_output=True)
+    output = subprocess.run([uclid, "--help"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     assert output.returncode == 0
     output = output.stdout.decode("utf-8")
     assert "uclid 0.9.5" in output, f"uclid version not found in {output}"
