@@ -172,20 +172,22 @@ class UclidFunctionDecl(UclidDecl):
 
 
 class UclidProcedureDecl(UclidDecl):
-    def __init__(self, name: str, proceduresig, body):
+    def __init__(self, name: str, proceduresig, body, noinline=False) -> None:
         super().__init__(DeclTypes.PROCEDURE)
         self.name = name
         self.proceduresig = proceduresig
         self.body = body
+        self.noinline = noinline
 
     @property
     def __declstring__(self) -> str:
-        return """procedure {}
+        return """procedure {}{}
     {}
 {{
 {}
 }}
     """.format(
+            "[noinline] " if self.noinline else "",
             self.name,
             self.proceduresig.__inject__(),
             textwrap.indent(self.body.__inject__(), "\t"),
@@ -1745,7 +1747,11 @@ class UclidModule(UclidElement):
             return uf
 
     def mkProcedure(
-        self, name: str, proceduresig: UclidProcedureSig, body: UclidStmt
+        self,
+        name: str,
+        proceduresig: UclidProcedureSig,
+        body: UclidStmt,
+        noinline: bool = False,
     ) -> UclidProcedure:
         """Add a new procedure to the module
 
@@ -1753,6 +1759,7 @@ class UclidModule(UclidElement):
             name (str): Procedure name
             proceduresig (UclidProcedureSig): Procedure signature
             body (UclidStmt): Procedure body
+            noinline (bool, optional): True for non-inline procedure. Defaults to False.
 
         Returns:
             UclidProcedure: Procedure object
@@ -1763,7 +1770,7 @@ class UclidModule(UclidElement):
             )
         else:
             proc = UclidProcedure(name)
-            procdecl = UclidProcedureDecl(name, proceduresig, body)
+            procdecl = UclidProcedureDecl(name, proceduresig, body, noinline)
             self.procedure_defns[name] = procdecl
             return proc
 
