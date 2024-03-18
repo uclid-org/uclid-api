@@ -1,7 +1,7 @@
 import logging
 import textwrap
 from enum import Enum
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 __author__ = "Adwait Godbole"
 __copyright__ = "Adwait Godbole"
@@ -405,6 +405,16 @@ class UclidEnumType(UclidType):
         self.members = members
 
 
+class UclidRecordType(UclidType):
+    def __init__(self, members):
+        super().__init__(
+            "record {{ {} }}".format(
+                ", ".join(["{}: {}".format(m[0], m[1].__inject__()) for m in members])
+            )
+        )
+        self.members = members
+
+
 class UclidSynonymType(UclidType):
     def __init__(self, name):
         super().__init__(name)
@@ -535,7 +545,7 @@ class UclidProcedureSig(UclidElement):
             else ""
         )
         return "({}){}{}{}{}".format(
-            input_str, modify_str, return_str, requires_str, ensures_str
+            input_str, return_str, modify_str, requires_str, ensures_str
         )
 
 
@@ -1090,15 +1100,11 @@ class UclidITEStmt(UclidStmt):
 
     def __inject__(self) -> str:
         if self.estmt is None:
-            return """
-    if ({}) {{ {} }}
-        """.format(
+            return "if ({}) {{ {} }}".format(
                 self.condition.__inject__(), self.tstmt.__inject__()
             )
         else:
-            return """
-    if ({}) {{ {} }} else {{ {} }}
-        """.format(
+            return "if ({}) {{ {} }} else {{ {} }}".format(
                 self.condition.__inject__(),
                 self.tstmt.__inject__(),
                 self.estmt.__inject__(),
@@ -1592,6 +1598,29 @@ class UclidModule(UclidElement):
             )
         else:
             t = UclidEnumType(members)
+            s = UclidSynonymType(name)
+            decl = UclidTypeDecl(name, t)
+            self.type_decls[name] = decl
+            return s
+
+    def mkRecordType(
+        self, name: str, members: List[Tuple[str, UclidType]]
+    ) -> UclidRecordType:
+        """Add a new record type to the module
+
+        Args:
+            name (str): name of the type
+            members (List[(str, UclidType)]): list of member names and types
+
+        Returns:
+            UclidRecordType : type object
+        """
+        if name in self.type_decls:
+            _logger.warn(
+                "Redeclaration of type named {} in module {}".format(name, self.name)
+            )
+        else:
+            t = UclidRecordType(members)
             s = UclidSynonymType(name)
             decl = UclidTypeDecl(name, t)
             self.type_decls[name] = decl
