@@ -1,16 +1,17 @@
 from .builder import (
     PortType,
+    UclidBMCCommand,
     UclidBooleanType,
     UclidCheckCommand,
     UclidContext,
+    UclidControlBlock,
+    UclidInductionCommand,
     UclidIntegerType,
     UclidOpExpr,
-    UclidPrintResultsCommand,
     UclidPrintCexJSONCommand,
-    UclidInductionCommand,
-    UclidBMCCommand,
-    UclidControlBlock
+    UclidPrintResultsCommand,
 )
+
 
 # Variable creation sugaring
 def mkUclidVar(varname, typ, porttype):
@@ -163,18 +164,24 @@ UInt = UclidIntegerType()
 CMD_check = UclidCheckCommand()
 CMD_print = UclidPrintResultsCommand()
 
+
 def mkBMCBlock(enginename: str, depth: int, is_json: bool = True):
-    return UclidControlBlock([
-            UclidBMCCommand(enginename, depth), 
-            CMD_check, 
-            UclidPrintCexJSONCommand(enginename) if is_json else None, 
-            CMD_print
-        ])
+    return UclidControlBlock(
+        [
+            UclidBMCCommand(enginename, depth),
+            CMD_check,
+            UclidPrintCexJSONCommand(enginename) if is_json else None,
+            CMD_print,
+        ]
+    )
+
 
 def mkInductionBlock(enginename: str, is_json: bool = True):
-    return UclidControlBlock([
-            UclidInductionCommand(enginename), 
-            CMD_check, 
-            UclidPrintCexJSONCommand(enginename) if is_json else None, 
-            CMD_print
-        ])
+    return UclidControlBlock(
+        [
+            UclidInductionCommand(enginename),
+            CMD_check,
+            UclidPrintCexJSONCommand(enginename) if is_json else None,
+            CMD_print,
+        ]
+    )

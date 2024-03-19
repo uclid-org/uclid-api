@@ -23,7 +23,9 @@ def verify(query: str):
         tmp.write(query.encode())
         tmp.flush()
         _logger.info(f"Running {uclid} on {tmp.name}")
-        output = subprocess.run([uclid, tmp.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output = subprocess.run(
+            [uclid, tmp.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
         return output.stdout.decode("utf-8")
 
 
