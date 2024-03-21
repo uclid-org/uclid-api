@@ -1520,7 +1520,7 @@ class UclidModule(UclidElement):
         # list
         self.procedure_defns: Dict[str, UclidProcedureDecl] = dict()
         # list
-        self.module_assumes: Dict[str, UclidAxiomDecl] = dict()
+        self.module_axioms: Dict[str, UclidAxiomDecl] = dict()
         # list
         self.module_properties: Dict[str, UclidSpecDecl] = dict()
 
@@ -1808,40 +1808,40 @@ class UclidModule(UclidElement):
             self.procedure_defns[name] = procdecl
             return proc
 
-    def mkAssume(self, name: str, body: UclidExpr) -> UclidAxiomDecl:
+    def mkAxiom(self, name: str, body: UclidExpr) -> UclidAxiomDecl:
         """Add a new assumption to the module
 
         Args:
             name (str): Name of the assumption (axiom)
             body (UclidExpr): Assumption body
         """
-        if name in self.module_assumes:
+        if name in self.module_axioms:
             _logger.error(
                 "Redeclaration of assumption {} in module {}".format(name, self.name)
             )
         else:
-            assm = UclidAxiomDecl(name, body)
-            self.module_assumes[name] = assm
-            return assm
+            axiom = UclidAxiomDecl(name, body)
+            self.module_axioms[name] = axiom
+            return axiom
 
-    def setAssume(self, name: str, body: UclidExpr) -> UclidAxiomDecl:
+    def setAxiom(self, name: str, body: UclidExpr) -> UclidAxiomDecl:
         """Set existing assumption in the module
 
         Args:
             name (str): Name of the assumption (axiom)
             body (UclidExpr): Assumption body
         """
-        if name in self.module_assumes:
+        if name in self.module_axioms:
             _logger.warn(
                 "Assumption {} does not exist in module {}, creating one".format(
                     name, self.name
                 )
             )
-            self.mkAssume(name, body)
+            self.mkAxiom(name, body)
         else:
-            assm = UclidAxiomDecl(name, body)
-            self.module_assumes[name] = assm
-            return assm
+            axiom = UclidAxiomDecl(name, body)
+            self.module_axioms[name] = axiom
+            return axiom
 
     def mkProperty(self, name, body: UclidExpr, is_ltl=False) -> UclidSpecDecl:
         """Add a new property (assertion) to the module
@@ -1956,11 +1956,11 @@ class UclidModule(UclidElement):
             ]
         )
 
-    def __module_assumes__(self):
+    def __module_axioms__(self):
         return "\n".join(
             [
-                textwrap.indent(assm.__inject__(), "\t")
-                for k, assm in self.module_assumes.items()
+                textwrap.indent(axiom.__inject__(), "\t")
+                for k, axiom in self.module_axioms.items()
             ]
         )
 
@@ -2013,7 +2013,7 @@ class UclidModule(UclidElement):
             \t// Procedures
             {}
 
-            \t// Assumes
+            \t// Axioms
             {}
 
             \t// Properties
@@ -2028,7 +2028,7 @@ class UclidModule(UclidElement):
             self.__define_decls__(),
             self.__function_decls__(),
             self.__procedure_defns__(),
-            self.__module_assumes__(),
+            self.__module_axioms__(),
             self.__module_properties__(),
         )
         acc += textwrap.dedent(
