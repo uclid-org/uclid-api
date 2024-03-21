@@ -172,12 +172,11 @@ class UclidFunctionDecl(UclidDecl):
 
 
 class UclidProcedureDecl(UclidDecl):
-    def __init__(self, name: str, proceduresig, body, noinline=False) -> None:
+    def __init__(self, name: str, proceduresig, body) -> None:
         super().__init__(DeclTypes.PROCEDURE)
         self.name = name
         self.proceduresig = proceduresig
         self.body = body
-        self.noinline = noinline
 
     @property
     def __declstring__(self) -> str:
@@ -187,7 +186,7 @@ class UclidProcedureDecl(UclidDecl):
 {}
 }}
     """.format(
-            "[noinline] " if self.noinline else "",
+            "[noinline] " if self.proceduresig.noinline else "",
             self.name,
             self.proceduresig.__inject__(),
             textwrap.indent(self.body.__inject__(), "\t"),
@@ -480,7 +479,13 @@ class UclidFunction(UclidElement):
 class UclidProcedureSig(UclidElement):
     # ip_args are pairs of str, Uclidtype elements
     def __init__(
-        self, inputs, modifies=None, returns=None, requires=None, ensures=None
+        self,
+        inputs,
+        modifies=None,
+        returns=None,
+        requires=None,
+        ensures=None,
+        noinline=False,
     ) -> None:
         """Procedure signature
 
@@ -495,6 +500,7 @@ class UclidProcedureSig(UclidElement):
                 verification. Defaults to None.
             ensures (UclidExpr, optional): Output/final guarantees in procedural
                 verification. Defaults to None.
+            noinline (bool, optional): True for non-inline procedure. Defaults to False.
         """
         super().__init__()
         self.inputs = inputs
@@ -502,6 +508,7 @@ class UclidProcedureSig(UclidElement):
         self.returns = returns
         self.requires = requires
         self.ensures = ensures
+        self.noinline = noinline
 
     def __inject__(self) -> str:
         input_str = ", ".join(
@@ -1780,7 +1787,6 @@ class UclidModule(UclidElement):
         name: str,
         proceduresig: UclidProcedureSig,
         body: UclidStmt,
-        noinline: bool = False,
     ) -> UclidProcedure:
         """Add a new procedure to the module
 
@@ -1788,7 +1794,6 @@ class UclidModule(UclidElement):
             name (str): Procedure name
             proceduresig (UclidProcedureSig): Procedure signature
             body (UclidStmt): Procedure body
-            noinline (bool, optional): True for non-inline procedure. Defaults to False.
 
         Returns:
             UclidProcedure: Procedure object
@@ -1799,7 +1804,7 @@ class UclidModule(UclidElement):
             )
         else:
             proc = UclidProcedure(name)
-            procdecl = UclidProcedureDecl(name, proceduresig, body, noinline)
+            procdecl = UclidProcedureDecl(name, proceduresig, body)
             self.procedure_defns[name] = procdecl
             return proc
 
