@@ -69,6 +69,7 @@ class DeclTypes(Enum):
     PROCEDURE = 7
     CONSTRAINTS = 8
     IMPORT = 9
+    GROUP = 10
 
 
 # Base class for (all sorts of) uclid declarations
@@ -90,6 +91,8 @@ class UclidDecl(UclidElement):
             return "instance {} : {};".format(self.name, self.__declstring__)
         elif self.decltype == DeclTypes.CONST:
             return "const {} : {};".format(self.name, self.__declstring__)
+        elif self.decltype == DeclTypes.GROUP:
+            return "group {} : {};".format(self.name, self.__declstring__)
         elif self.decltype == DeclTypes.DEFINE:
             return self.__declstring__
         elif self.decltype == DeclTypes.FUNCTION:
@@ -130,6 +133,21 @@ class UclidVarDecl(UclidDecl):
     @property
     def __declstring__(self):
         return self.typ.__inject__()
+
+
+class UclidGroupDecl(UclidDecl):
+    def __init__(self, name, typ, val=None):
+        super().__init__(DeclTypes.GROUP)
+        self.name = name
+        self.typ = typ
+        self.val = set([UclidLiteral(v) for v in val])
+
+    @property
+    def __declstring__(self):
+        if self.val is None:
+            return self.typ.__inject__()
+        val = f"{{ {', '.join(v.__inject__() for v in self.val)} }}"
+        return f"{self.typ.__inject__()} = {val}"
 
 
 class UclidConstDecl(UclidDecl):
@@ -389,6 +407,11 @@ class UclidBVType(UclidType):
     def __init__(self, width):
         super().__init__("bv{}".format(width))
         self.width = width
+
+
+class UclidFloatType(UclidType):
+    def __init__(self):
+        super().__init__("single")
 
 
 class UclidArrayType(UclidType):
@@ -837,6 +860,19 @@ class UclidForallExpr(UclidExpr):
         )
 
 
+class UclidExistExpr(UclidExpr):
+    def __init__(self, iterator, typ, bodyexpr: UclidExpr):
+        super().__init__()
+        self.iterator = iterator if isinstance(iterator, str) else iterator.__inject__()
+        self.typ = typ
+        self.bodyexpr = bodyexpr
+
+    def __inject__(self) -> str:
+        return "exist ({} : {}) :: ({})".format(
+            self.iterator, self.typ.__inject__(), self.bodyexpr.__inject__()
+        )
+
+
 # ==============================================================================
 # Uclid Literals
 # ==============================================================================
@@ -858,6 +894,9 @@ class UclidLiteral(UclidExpr):
 
     def __add__(self, other):
         return super().__add__(other)
+
+    def __hash__(self):
+        return hash(self.lit + ("'" if self.isprime else ""))
 
 
 class UclidIntegerLiteral(UclidLiteral):
@@ -885,6 +924,14 @@ class UclidBVLiteral(UclidLiteral):
         self.width = width
 
 
+class UclidFloatLiteral(UclidLiteral):
+    """Uclid float literal"""
+
+    def __init__(self, val):
+        super().__init__(f"{val}single")
+        self.val = val
+
+
 # ==============================================================================
 # Uclid Variables
 # ==============================================================================
@@ -901,6 +948,16 @@ class UclidVar(UclidLiteral):
         return super().__add__(other)
 
 
+class UclidGroup(UclidLiteral):
+    def __init__(self, name, typ):
+        super().__init__(name)
+        self.name = name
+        self.typ = typ
+
+    def __inject__(self) -> str:
+        return self.name
+
+
 # Uclid integer type declaration
 class UclidIntegerVar(UclidVar):
     def __init__(self, name) -> None:
@@ -915,6 +972,15 @@ class UclidBVVar(UclidVar):
     def __init__(self, name, width) -> None:
         super().__init__(name, UclidBVType(width))
         self.width = width
+
+    def __add__(self, other):
+        return super().__add__(other)
+
+
+# Uclid float type declaration
+class UclidFloatVar(UclidVar):
+    def __init__(self, name) -> None:
+        super().__init__(name, UclidFloatType())
 
     def __add__(self, other):
         return super().__add__(other)
@@ -1107,14 +1173,15 @@ class UclidITEStmt(UclidStmt):
 
     def __inject__(self) -> str:
         if self.estmt is None:
-            return "if ({}) {{ {} }}".format(
-                self.condition.__inject__(), self.tstmt.__inject__()
+            return "if ({}) {{\n{}\n}}".format(
+                self.condition.__inject__(),
+                textwrap.indent(self.tstmt.__inject__(), "\t"),
             )
         else:
-            return "if ({}) {{ {} }} else {{ {} }}".format(
+            return "if ({}) {{\n{}\n}} else {{\n{}\n}}".format(
                 self.condition.__inject__(),
-                self.tstmt.__inject__(),
-                self.estmt.__inject__(),
+                textwrap.indent(self.tstmt.__inject__(), "\t"),
+                textwrap.indent(self.estmt.__inject__(), "\t"),
             )
 
 
@@ -1502,6 +1569,8 @@ class UclidModule(UclidElement):
         # dict: declname : str -> UclidDecl
         self.var_decls: Dict[str, UclidVarDecl] = dict()
         # dict: declname : str -> UclidDecl
+        self.group_decls: Dict[str, UclidGroupDecl] = dict()
+        # dict: declname : str -> UclidDecl
         self.const_decls: Dict[str, UclidConstDecl] = dict()
         # dict: declname : str -> UclidDecl
         self.type_decls: Dict[str, UclidTypeDecl] = dict()
@@ -1663,6 +1732,18 @@ class UclidModule(UclidElement):
                 self.var_decls[name] = decl
             return v
 
+    def mkGroup(self, name: str, typ: UclidType, members: set[UclidLiteral]):
+        """Add a new group of variables or constants to the module"""
+        if name in self.group_decls:
+            _logger.warn(
+                "Redeclaration of name {} in module {}".format(name, self.name)
+            )
+        else:
+            g = UclidGroup(name, typ)
+            decl = UclidGroupDecl(name, typ, members)
+            self.group_decls[name] = decl
+            return g
+
     def mkIntegerVar(self, name: str, porttype=PortType.var):
         """Add a new integer variable to the module"""
         self.mkVar(name, UclidIntegerType(), porttype)
@@ -1674,6 +1755,10 @@ class UclidModule(UclidElement):
     def mkBVVar(self, name: str, width, porttype=PortType.var):
         """Add a new bitvector variable to the module"""
         self.mkVar(name, UclidBVType(width), porttype)
+
+    def mkFloatVar(self, name: str, porttype=PortType.var):
+        """Add a new float variable to the module"""
+        self.mkVar(name, UclidFloatType(), porttype)
 
     def mkConst(self, name: str, typ: UclidType, value=None) -> UclidConst:
         """Add a new constant to the module
@@ -1908,6 +1993,14 @@ class UclidModule(UclidElement):
         )
         return "\n".join([vs, ips, ops])
 
+    def __group_decls__(self):
+        return "\n".join(
+            [
+                textwrap.indent(decl.__inject__(), "\t")
+                for k, decl in self.group_decls.items()
+            ]
+        )
+
     def __const_decls__(self):
         return "\n".join(
             [
@@ -1998,6 +2091,9 @@ class UclidModule(UclidElement):
             \t// Variables
             {}
 
+            \t// Groups
+            {}
+
             \t// Consts
             {}
 
@@ -2023,6 +2119,7 @@ class UclidModule(UclidElement):
             self.__import_decls__(),
             self.__type_decls__(),
             self.__var_decls__(),
+            self.__group_decls__(),
             self.__const_decls__(),
             self.__instance_decls__(),
             self.__define_decls__(),
