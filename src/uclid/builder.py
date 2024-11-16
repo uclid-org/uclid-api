@@ -1050,7 +1050,7 @@ class UclidComment(UclidStmt):
         self.text = text
 
     def __inject__(self) -> str:
-        return "// ".join(("\n" + self.text.lstrip()).splitlines(True))
+        return "\n".join(["// " + line for line in self.text.lstrip().splitlines(True)])
 
 
 class UclidRaw(UclidStmt):
