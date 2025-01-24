@@ -188,6 +188,14 @@ class UclidFunctionDecl(UclidDecl):
     def __declstring__(self) -> str:
         return "function {}{};".format(self.name, self.functionsig.__inject__())
 
+class UclidOracleFunctionDecl(UclidFunctionDecl):
+    def __init__(self, name: str, functionsig) -> None:
+        super().__init__(name, functionsig)
+
+    @property
+    def __declstring__(self) -> str:
+        return "oracle function {} {};".format(self.name, self.functionsig.__inject__())
+
 
 class UclidProcedureDecl(UclidDecl):
     def __init__(self, name: str, proceduresig, body) -> None:
@@ -477,6 +485,30 @@ class UclidFunctionSig(UclidElement):
         return "({}) : {}".format(input_sig, self.outtype.__inject__())
 
 
+class UclidOracleFunctionSig(UclidFunctionSig):
+    def __init__(self, inputs: list, outtype: UclidType, oracle: str):
+        """Uclid oracle function signature
+        
+        Args:
+            oracle (str): Name of oracle binary (must be in user's PATH)
+            inputs (List[(UclidLiteral|str, UclidType)]): List of input arguments
+            outtype (UclidType): Output type
+        """
+        super().__init__(inputs, outtype)
+        self.oracle = oracle
+
+    def __inject__(self) -> str:
+        input_sig = ", ".join(
+        [
+            "{} : {}".format(
+                i[0] if isinstance(i[0], str) else i[0].__inject__(),
+                i[1].__inject__(),
+            )
+            for i in self.inputs
+        ]
+        )
+        return "[{}] ({}) : {}".format(self.oracle, input_sig, self.outtype.__inject__())
+
 class UclidDefine(UclidElement):
     def __init__(self, name) -> None:
         super().__init__()
@@ -496,6 +528,14 @@ class UclidFunction(UclidElement):
         return self.name
 
 
+class UclidOracleFunction(UclidFunction):
+    def __init__(self, name) -> None:
+        """Uclid oracle function"""
+        super().__init__()
+        self.name = name
+
+    def __inject__(self) -> str:
+        return self.name
 # ==============================================================================
 # Uclid Procedures
 # ==============================================================================
@@ -1864,6 +1904,27 @@ class UclidModule(UclidElement):
         else:
             uf = UclidFunction(name)
             ufdec = UclidFunctionDecl(name, functionsig)
+            self.function_decls[name] = ufdec
+            return uf
+        
+    # TODO: Add oracle function builder here
+
+    def mkOracleFunction(self, name, functionsig) -> UclidOracleFunction:
+        """Uclid oracle function declaration
+
+        Args:
+            name (str): name of the function
+            oracleFunctionSig (O)
+
+        Returns:
+        """
+        if name in self.function_decls:
+            _logger.error(
+                "Redeclaration of function {} in module {}".format(name, self.name)
+            )
+        else:
+            uf = UclidFunction(name)
+            ufdec = UclidOracleFunctionDecl(name, functionsig)
             self.function_decls[name] = ufdec
             return uf
 
