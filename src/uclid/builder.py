@@ -1906,8 +1906,6 @@ class UclidModule(UclidElement):
             ufdec = UclidFunctionDecl(name, functionsig)
             self.function_decls[name] = ufdec
             return uf
-        
-    # TODO: Add oracle function builder here
 
     def mkOracleFunction(self, name, functionsig) -> UclidOracleFunction:
         """Uclid oracle function declaration
