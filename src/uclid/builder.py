@@ -860,7 +860,7 @@ class UclidForallExpr(UclidExpr):
         )
 
 
-class UclidExistExpr(UclidExpr):
+class UclidExistsExpr(UclidExpr):
     def __init__(self, iterator, typ, bodyexpr: UclidExpr):
         super().__init__()
         self.iterator = iterator if isinstance(iterator, str) else iterator.__inject__()
@@ -868,10 +868,37 @@ class UclidExistExpr(UclidExpr):
         self.bodyexpr = bodyexpr
 
     def __inject__(self) -> str:
-        return "exist ({} : {}) :: ({})".format(
+        return "exists ({} : {}) :: ({})".format(
             self.iterator, self.typ.__inject__(), self.bodyexpr.__inject__()
         )
 
+
+class UclidFiniteForallExpr(UclidExpr):
+    def __init__(self, iterator, typ, group, bodyexpr: UclidExpr):
+        super().__init__()
+        self.iterator = iterator if isinstance(iterator, str) else iterator.__inject__()
+        self.typ = typ
+        self.group = group
+        self.bodyexpr = bodyexpr
+
+    def __inject__(self) -> str:
+        return "finite_forall ({} : {}) in {} :: ({})".format(
+            self.iterator, self.typ.__inject__(), self.group.__inject__(), self.bodyexpr.__inject__()
+        )
+
+
+class UclidFiniteExistsExpr(UclidExpr):
+    def __init__(self, iterator, typ, group, bodyexpr: UclidExpr):
+        super().__init__()
+        self.iterator = iterator if isinstance(iterator, str) else iterator.__inject__()
+        self.typ = typ
+        self.group = group
+        self.bodyexpr = bodyexpr
+
+    def __inject__(self) -> str:
+        return "finite_exists ({} : {}) in {} :: ({})".format(
+            self.iterator, self.typ.__inject__(), self.group.__inject__(), self.bodyexpr.__inject__()
+        )
 
 # ==============================================================================
 # Uclid Literals
