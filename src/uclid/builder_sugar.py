@@ -105,6 +105,10 @@ def Uimplies(args):
     return UclidOpExpr("implies", args)
 
 
+def Uiff(args):
+    return UclidOpExpr("iff", args)
+
+
 def Ubvadd(args):
     return UclidOpExpr("bvadd", args)
 
